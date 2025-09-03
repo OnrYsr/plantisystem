@@ -5,7 +5,7 @@ from config import Config
 import json
 
 # Flask eklentileri
-socketio = SocketIO()
+socketio = SocketIO(cors_allowed_origins="*")  # CORS sorununu çözmek için
 
 # MQTT client
 mqtt_client = mqtt.Client()
@@ -33,12 +33,27 @@ def create_app(config_class=Config):
             print(f"MQTT Mesajı alındı - Topic: {msg.topic}")
             print(f"Payload: {msg.payload.decode()}")
             
-            # Socket.IO ile web arayüzüne gönder
-            socketio.emit('sensor_update', {
-                'topic': msg.topic,
-                'payload': msg.payload.decode()
-            })
-            print("Mesaj web arayüzüne gönderildi")
+            # Doğrudan JSON olarak parse et
+            payload = json.loads(msg.payload.decode())
+            
+            if msg.topic == 'sensors/data':
+                # Sensör verilerini web arayüzüne gönder
+                socketio.emit('sensor_update', {
+                    'topic': msg.topic,
+                    'payload': payload  # JSON olarak gönder
+                })
+                print("Sensör verisi web arayüzüne gönderildi")
+            
+            elif msg.topic == 'pump/status':
+                # Pompa durumunu web arayüzüne gönder
+                socketio.emit('pump_status', payload)
+                print("Pompa durumu web arayüzüne gönderildi")
+            
+            elif msg.topic == 'system/status':
+                # Sistem durumunu web arayüzüne gönder
+                socketio.emit('system_status', payload)
+                print("Sistem durumu web arayüzüne gönderildi")
+                
         except Exception as e:
             print(f"MQTT mesaj işleme hatası: {e}")
 

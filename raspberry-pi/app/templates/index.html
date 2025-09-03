@@ -141,29 +141,28 @@
         // Sensör verilerini güncelle
         socket.on('sensor_update', function(data) {
             debug(`Yeni veri alındı - Topic: ${data.topic}`);
-            debug(`Payload: ${data.payload}`);
+            debug(`Payload: ${JSON.stringify(data.payload)}`);
             
             try {
-                const payload = JSON.parse(data.payload);
+                // data.payload zaten JSON objesi
+                const payload = data.payload;
                 
-                if (data.topic === 'sensors/data') {
-                    // Sensör değerlerini güncelle
-                    document.getElementById('temperature').textContent = `${payload.temperature.toFixed(1)}°C`;
-                    document.getElementById('humidity').textContent = `${payload.humidity.toFixed(1)}%`;
-                    document.getElementById('soil_moisture').textContent = payload.soil_moisture.state;
-                    document.getElementById('light').textContent = `${payload.light.percent}%`;
-                    debug('Sensör değerleri güncellendi');
-                }
-                else if (data.topic === 'pump/status') {
-                    // Pompa durumunu güncelle
-                    const status = payload === 'ON';
-                    const statusElement = document.getElementById('pump_status');
-                    statusElement.innerHTML = `Durum: <span class="badge ${status ? 'bg-success' : 'bg-danger'}">${status ? 'ÇALIŞIYOR' : 'DURDU'}</span>`;
-                    debug('Pompa durumu güncellendi');
-                }
+                // Sensör değerlerini güncelle
+                document.getElementById('temperature').textContent = `${payload.temperature.toFixed(1)}°C`;
+                document.getElementById('humidity').textContent = `${payload.humidity.toFixed(1)}%`;
+                document.getElementById('soil_moisture').textContent = payload.soil_moisture.state;
+                document.getElementById('light').textContent = `${payload.light.percent}%`;
+                debug('Sensör değerleri güncellendi');
             } catch (error) {
                 debug(`HATA: ${error.message}`);
             }
+        });
+
+        // Pompa durumunu güncelle
+        socket.on('pump_status', function(status) {
+            debug(`Pompa durumu alındı: ${status}`);
+            const statusElement = document.getElementById('pump_status');
+            statusElement.innerHTML = `Durum: <span class="badge ${status === 'ON' ? 'bg-success' : 'bg-danger'}">${status === 'ON' ? 'ÇALIŞIYOR' : 'DURDU'}</span>`;
         });
 
         // Pompa kontrol butonları
