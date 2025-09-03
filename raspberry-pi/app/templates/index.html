@@ -11,14 +11,6 @@
     <div class="container mt-4">
         <h1>Sensör Verileri</h1>
         
-        <!-- Debug Panel -->
-        <div class="card mb-3">
-            <div class="card-body">
-                <h5>Debug Mesajları</h5>
-                <pre id="debug" style="height: 200px; overflow-y: scroll;"></pre>
-            </div>
-        </div>
-
         <!-- Sensör Değerleri -->
         <div class="row">
             <div class="col-md-3">
@@ -57,39 +49,15 @@
     </div>
 
     <script>
-        // Debug fonksiyonu
-        function debug(message) {
-            const debugElement = document.getElementById('debug');
-            const timestamp = new Date().toLocaleTimeString();
-            debugElement.innerHTML = `[${timestamp}] ${message}\n` + debugElement.innerHTML;
-            console.log(`[${timestamp}] ${message}`);  // Browser konsoluna da yaz
-        }
-
-        // Socket.IO bağlantısı
         const socket = io();
-        debug('Socket.IO bağlantısı başlatılıyor...');
-
-        // Bağlantı olayları
-        socket.on('connect', () => {
-            debug('Socket.IO bağlandı');
-        });
-
-        socket.on('disconnect', () => {
-            debug('Socket.IO bağlantısı kesildi');
-        });
-
-        socket.on('connect_error', (error) => {
-            debug('Socket.IO bağlantı hatası: ' + error);
-        });
-
-        // Sensör verilerini güncelle
-        socket.on('sensor_update', function(data) {
-            debug('Sensör verisi alındı: ' + JSON.stringify(data));
-
-            document.getElementById('temperature').textContent = data.temperature.toFixed(1) + '°C';
-            document.getElementById('humidity').textContent = data.humidity.toFixed(1) + '%';
-            document.getElementById('soil_moisture').textContent = data.soil_moisture.state;
-            document.getElementById('light').textContent = data.light.percent + '%';
+        
+        socket.on('sensor_data', function(data) {
+            const sensorData = JSON.parse(data);
+            
+            document.getElementById('temperature').textContent = sensorData.temperature.toFixed(1) + '°C';
+            document.getElementById('humidity').textContent = sensorData.humidity.toFixed(1) + '%';
+            document.getElementById('soil_moisture').textContent = sensorData.soil_moisture.state;
+            document.getElementById('light').textContent = sensorData.light.percent + '%';
         });
     </script>
 </body>
