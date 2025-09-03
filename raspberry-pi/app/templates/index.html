@@ -5,218 +5,91 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Akıllı Sulama Sistemi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-    <style>
-        .sensor-card {
-            transition: all 0.3s ease;
-        }
-        .sensor-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        #debug {
-            font-family: monospace;
-            font-size: 12px;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-    </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">
-                <i class="bi bi-droplet-fill"></i>
-                PlantıSystem
-            </a>
-        </div>
-    </nav>
-
     <div class="container mt-4">
+        <h1>Sensör Verileri</h1>
+        
         <!-- Debug Panel -->
         <div class="card mb-3">
             <div class="card-body">
-                <h5 class="card-title">Debug Bilgileri</h5>
-                <div class="d-flex justify-content-end mb-2">
-                    <button class="btn btn-sm btn-secondary" onclick="clearDebug()">Temizle</button>
-                </div>
-                <pre id="debug" class="bg-light p-2" style="max-height: 200px; overflow-y: auto;"></pre>
+                <h5>Debug Mesajları</h5>
+                <pre id="debug" style="height: 200px; overflow-y: scroll;"></pre>
             </div>
         </div>
 
-        <!-- Sensör Kartları -->
-        <section id="sensors" class="mb-5">
-            <h2 class="mb-4">Sensör Verileri</h2>
-            <div class="row g-4">
-                <!-- Sıcaklık -->
-                <div class="col-md-3">
-                    <div class="card sensor-card">
-                        <div class="card-body text-center">
-                            <i class="bi bi-thermometer-half display-4 text-danger"></i>
-                            <h5 class="card-title mt-3">Sıcaklık</h5>
-                            <p class="display-6" id="temperature">--°C</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Nem -->
-                <div class="col-md-3">
-                    <div class="card sensor-card">
-                        <div class="card-body text-center">
-                            <i class="bi bi-moisture display-4 text-info"></i>
-                            <h5 class="card-title mt-3">Nem</h5>
-                            <p class="display-6" id="humidity">--%</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Toprak Nemi -->
-                <div class="col-md-3">
-                    <div class="card sensor-card">
-                        <div class="card-body text-center">
-                            <i class="bi bi-water display-4 text-success"></i>
-                            <h5 class="card-title mt-3">Toprak Nemi</h5>
-                            <p class="display-6" id="soil_moisture">--</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Işık -->
-                <div class="col-md-3">
-                    <div class="card sensor-card">
-                        <div class="card-body text-center">
-                            <i class="bi bi-brightness-high display-4 text-warning"></i>
-                            <h5 class="card-title mt-3">Işık</h5>
-                            <p class="display-6" id="light">--%</p>
-                        </div>
+        <!-- Sensör Değerleri -->
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5>Sıcaklık</h5>
+                        <p id="temperature">--°C</p>
                     </div>
                 </div>
             </div>
-        </section>
-
-        <!-- Pompa Kontrolü -->
-        <section class="mb-5">
-            <div class="card">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-6">
-                            <h4>
-                                <i class="bi bi-droplet"></i>
-                                Su Pompası Kontrolü
-                            </h4>
-                            <p id="pump_status" class="mb-0">Durum: <span class="badge bg-secondary">Bilinmiyor</span></p>
-                        </div>
-                        <div class="col-md-6 text-end">
-                            <button id="pumpOn" class="btn btn-success me-2">
-                                <i class="bi bi-play-fill"></i>
-                                Pompayı Çalıştır
-                            </button>
-                            <button id="pumpOff" class="btn btn-danger">
-                                <i class="bi bi-stop-fill"></i>
-                                Pompayı Durdur
-                            </button>
-                        </div>
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5>Nem</h5>
+                        <p id="humidity">--%</p>
                     </div>
                 </div>
             </div>
-        </section>
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5>Toprak Nemi</h5>
+                        <p id="soil_moisture">--</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5>Işık</h5>
+                        <p id="light">--%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
-        // Debug fonksiyonları
-        function addDebugMessage(message) {
+        // Debug fonksiyonu
+        function debug(message) {
             const debugElement = document.getElementById('debug');
             const timestamp = new Date().toLocaleTimeString();
             debugElement.innerHTML = `[${timestamp}] ${message}\n` + debugElement.innerHTML;
-        }
-
-        function clearDebug() {
-            document.getElementById('debug').innerHTML = '';
+            console.log(`[${timestamp}] ${message}`);  // Browser konsoluna da yaz
         }
 
         // Socket.IO bağlantısı
-        const socket = io({
-            transports: ['websocket', 'polling'],
-            reconnection: true,
-            reconnectionAttempts: Infinity,
-            reconnectionDelay: 1000
-        });
+        const socket = io();
+        debug('Socket.IO bağlantısı başlatılıyor...');
 
         // Bağlantı olayları
         socket.on('connect', () => {
-            addDebugMessage('✅ Socket.IO bağlandı');
-            document.title = 'Akıllı Sulama Sistemi - Bağlı';
+            debug('Socket.IO bağlandı');
         });
 
         socket.on('disconnect', () => {
-            addDebugMessage('❌ Socket.IO bağlantısı kesildi');
-            document.title = 'Akıllı Sulama Sistemi - Bağlantı Kesildi';
+            debug('Socket.IO bağlantısı kesildi');
         });
 
         socket.on('connect_error', (error) => {
-            addDebugMessage(`❌ Socket.IO bağlantı hatası: ${error.message}`);
+            debug('Socket.IO bağlantı hatası: ' + error);
         });
 
         // Sensör verilerini güncelle
         socket.on('sensor_update', function(data) {
-            console.log('Sensor update received:', data); // Browser konsoluna yaz
-            addDebugMessage(`📊 Sensör verisi alındı: ${JSON.stringify(data)}`);
+            debug('Sensör verisi alındı: ' + JSON.stringify(data));
 
-            try {
-                const payload = data.payload;
-                
-                // Sıcaklık
-                const tempElement = document.getElementById('temperature');
-                tempElement.textContent = `${payload.temperature.toFixed(1)}°C`;
-                
-                // Nem
-                const humElement = document.getElementById('humidity');
-                humElement.textContent = `${payload.humidity.toFixed(1)}%`;
-                
-                // Toprak Nemi
-                const soilElement = document.getElementById('soil_moisture');
-                soilElement.textContent = payload.soil_moisture.state;
-                
-                // Işık
-                const lightElement = document.getElementById('light');
-                lightElement.textContent = `${payload.light.percent}%`;
-                
-                addDebugMessage('✅ Sensör değerleri güncellendi');
-            } catch (error) {
-                addDebugMessage(`❌ Veri işleme hatası: ${error.message}`);
-                console.error('Veri işleme hatası:', error);
-            }
-        });
-
-        // Pompa durumunu güncelle
-        socket.on('pump_status', function(status) {
-            addDebugMessage(`🚰 Pompa durumu: ${status}`);
-            const statusElement = document.getElementById('pump_status');
-            statusElement.innerHTML = `Durum: <span class="badge ${status === 'ON' ? 'bg-success' : 'bg-danger'}">${status === 'ON' ? 'ÇALIŞIYOR' : 'DURDU'}</span>`;
-        });
-
-        // Pompa kontrol butonları
-        document.getElementById('pumpOn').addEventListener('click', function() {
-            addDebugMessage('🚰 Pompa AÇIK komutu gönderiliyor...');
-            fetch('/api/pump/on')
-                .then(response => response.json())
-                .then(data => addDebugMessage(`✅ Pompa AÇIK yanıt: ${JSON.stringify(data)}`))
-                .catch(error => addDebugMessage(`❌ Pompa AÇIK hata: ${error.message}`));
-        });
-
-        document.getElementById('pumpOff').addEventListener('click', function() {
-            addDebugMessage('🚰 Pompa KAPALI komutu gönderiliyor...');
-            fetch('/api/pump/off')
-                .then(response => response.json())
-                .then(data => addDebugMessage(`✅ Pompa KAPALI yanıt: ${JSON.stringify(data)}`))
-                .catch(error => addDebugMessage(`❌ Pompa KAPALI hata: ${error.message}`));
-        });
-
-        // Sayfa yüklendiğinde
-        window.addEventListener('load', function() {
-            addDebugMessage('🔄 Sayfa yüklendi, Socket.IO bağlantısı başlatılıyor...');
+            document.getElementById('temperature').textContent = data.temperature.toFixed(1) + '°C';
+            document.getElementById('humidity').textContent = data.humidity.toFixed(1) + '%';
+            document.getElementById('soil_moisture').textContent = data.soil_moisture.state;
+            document.getElementById('light').textContent = data.light.percent + '%';
         });
     </script>
 </body>
