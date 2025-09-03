@@ -29,6 +29,14 @@
     </nav>
 
     <div class="container mt-4">
+        <!-- Debug Panel -->
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Debug Bilgileri</h5>
+                <pre id="debug" class="bg-light p-2" style="max-height: 200px; overflow-y: auto;"></pre>
+            </div>
+        </div>
+
         <!-- Sensör Kartları -->
         <section id="sensors" class="mb-5">
             <h2 class="mb-4">Sensör Verileri</h2>
@@ -109,41 +117,70 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Debug fonksiyonu
+        function debug(message) {
+            const debugElement = document.getElementById('debug');
+            const timestamp = new Date().toLocaleTimeString();
+            debugElement.innerHTML += `[${timestamp}] ${message}\n`;
+            debugElement.scrollTop = debugElement.scrollHeight;
+        }
+
         // Socket.IO bağlantısı
         const socket = io();
+        debug('Socket.IO bağlantısı başlatıldı');
+        
+        // Bağlantı durumu
+        socket.on('connect', () => {
+            debug('Socket.IO bağlandı');
+        });
+
+        socket.on('disconnect', () => {
+            debug('Socket.IO bağlantısı kesildi');
+        });
         
         // Sensör verilerini güncelle
         socket.on('sensor_update', function(data) {
-            const payload = JSON.parse(data.payload);
+            debug(`Yeni veri alındı - Topic: ${data.topic}`);
+            debug(`Payload: ${data.payload}`);
             
-            if (data.topic === 'sensors/data') {
-                // Sensör değerlerini güncelle
-                document.getElementById('temperature').textContent = `${payload.temperature.toFixed(1)}°C`;
-                document.getElementById('humidity').textContent = `${payload.humidity.toFixed(1)}%`;
-                document.getElementById('soil_moisture').textContent = payload.soil_moisture.state;
-                document.getElementById('light').textContent = `${payload.light.percent}%`;
-            }
-            else if (data.topic === 'pump/status') {
-                // Pompa durumunu güncelle
-                const status = payload === 'ON';
-                const statusElement = document.getElementById('pump_status');
-                statusElement.innerHTML = `Durum: <span class="badge ${status ? 'bg-success' : 'bg-danger'}">${status ? 'ÇALIŞIYOR' : 'DURDU'}</span>`;
+            try {
+                const payload = JSON.parse(data.payload);
+                
+                if (data.topic === 'sensors/data') {
+                    // Sensör değerlerini güncelle
+                    document.getElementById('temperature').textContent = `${payload.temperature.toFixed(1)}°C`;
+                    document.getElementById('humidity').textContent = `${payload.humidity.toFixed(1)}%`;
+                    document.getElementById('soil_moisture').textContent = payload.soil_moisture.state;
+                    document.getElementById('light').textContent = `${payload.light.percent}%`;
+                    debug('Sensör değerleri güncellendi');
+                }
+                else if (data.topic === 'pump/status') {
+                    // Pompa durumunu güncelle
+                    const status = payload === 'ON';
+                    const statusElement = document.getElementById('pump_status');
+                    statusElement.innerHTML = `Durum: <span class="badge ${status ? 'bg-success' : 'bg-danger'}">${status ? 'ÇALIŞIYOR' : 'DURDU'}</span>`;
+                    debug('Pompa durumu güncellendi');
+                }
+            } catch (error) {
+                debug(`HATA: ${error.message}`);
             }
         });
 
         // Pompa kontrol butonları
         document.getElementById('pumpOn').addEventListener('click', function() {
+            debug('Pompa AÇIK butonu tıklandı');
             fetch('/api/pump/on')
                 .then(response => response.json())
-                .then(data => console.log(data))
-                .catch(error => console.error('Error:', error));
+                .then(data => debug(`Pompa AÇIK yanıt: ${JSON.stringify(data)}`))
+                .catch(error => debug(`Pompa AÇIK hata: ${error}`));
         });
 
         document.getElementById('pumpOff').addEventListener('click', function() {
+            debug('Pompa KAPALI butonu tıklandı');
             fetch('/api/pump/off')
                 .then(response => response.json())
-                .then(data => console.log(data))
-                .catch(error => console.error('Error:', error));
+                .then(data => debug(`Pompa KAPALI yanıt: ${JSON.stringify(data)}`))
+                .catch(error => debug(`Pompa KAPALI hata: ${error}`));
         });
     </script>
 </body>

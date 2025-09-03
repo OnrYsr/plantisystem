@@ -2,6 +2,7 @@ from flask import Flask
 from flask_socketio import SocketIO
 import paho.mqtt.client as mqtt
 from config import Config
+import json
 
 # Flask eklentileri
 socketio = SocketIO()
@@ -25,14 +26,19 @@ def create_app(config_class=Config):
         print(f"MQTT Bağlandı: {rc}")
         for topic in app.config['MQTT_TOPICS']:
             client.subscribe(topic)
+            print(f"Topic'e abone olundu: {topic}")
 
     def on_message(client, userdata, msg):
         try:
+            print(f"MQTT Mesajı alındı - Topic: {msg.topic}")
+            print(f"Payload: {msg.payload.decode()}")
+            
             # Socket.IO ile web arayüzüne gönder
             socketio.emit('sensor_update', {
                 'topic': msg.topic,
                 'payload': msg.payload.decode()
             })
+            print("Mesaj web arayüzüne gönderildi")
         except Exception as e:
             print(f"MQTT mesaj işleme hatası: {e}")
 
