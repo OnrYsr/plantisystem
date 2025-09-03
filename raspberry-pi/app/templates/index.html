@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akıllı Sulama Sistemi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        .sensor-card {
+            transition: all 0.3s ease;
+        }
+        .sensor-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-droplet-fill"></i>
+                PlantıSystem
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#sensors">Sensörler</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#charts">Grafikler</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#history">Geçmiş</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('auth.logout') }}">
+                            <i class="bi bi-box-arrow-right"></i>
+                            Çıkış
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Sensör Kartları -->
+        <section id="sensors" class="mb-5">
+            <h2 class="mb-4">Sensör Verileri</h2>
+            <div class="row g-4">
+                <!-- Sıcaklık -->
+                <div class="col-md-3">
+                    <div class="card sensor-card">
+                        <div class="card-body text-center">
+                            <i class="bi bi-thermometer-half display-4 text-danger"></i>
+                            <h5 class="card-title mt-3">Sıcaklık</h5>
+                            <p class="display-6" id="temperature">--°C</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Nem -->
+                <div class="col-md-3">
+                    <div class="card sensor-card">
+                        <div class="card-body text-center">
+                            <i class="bi bi-moisture display-4 text-info"></i>
+                            <h5 class="card-title mt-3">Nem</h5>
+                            <p class="display-6" id="humidity">--%</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Toprak Nemi -->
+                <div class="col-md-3">
+                    <div class="card sensor-card">
+                        <div class="card-body text-center">
+                            <i class="bi bi-water display-4 text-success"></i>
+                            <h5 class="card-title mt-3">Toprak Nemi</h5>
+                            <p class="display-6" id="soil_moisture">--</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Işık -->
+                <div class="col-md-3">
+                    <div class="card sensor-card">
+                        <div class="card-body text-center">
+                            <i class="bi bi-brightness-high display-4 text-warning"></i>
+                            <h5 class="card-title mt-3">Işık</h5>
+                            <p class="display-6" id="light">--%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pompa Kontrolü -->
+        <section class="mb-5">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h4>
+                                <i class="bi bi-droplet"></i>
+                                Su Pompası Kontrolü
+                            </h4>
+                            <p id="pump_status" class="mb-0">Durum: <span class="badge bg-secondary">Bilinmiyor</span></p>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <button id="pumpOn" class="btn btn-success me-2">
+                                <i class="bi bi-play-fill"></i>
+                                Pompayı Çalıştır
+                            </button>
+                            <button id="pumpOff" class="btn btn-danger">
+                                <i class="bi bi-stop-fill"></i>
+                                Pompayı Durdur
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Grafikler -->
+        <section id="charts" class="mb-5">
+            <h2 class="mb-4">Sensör Grafikleri</h2>
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Sıcaklık ve Nem</h5>
+                            <div class="chart-container">
+                                <canvas id="tempHumChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Toprak Nemi ve Işık</h5>
+                            <div class="chart-container">
+                                <canvas id="soilLightChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Geçmiş -->
+        <section id="history" class="mb-5">
+            <h2 class="mb-4">Pompa Çalışma Geçmişi</h2>
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Tarih</th>
+                                    <th>Başlangıç</th>
+                                    <th>Bitiş</th>
+                                    <th>Süre</th>
+                                    <th>Tetikleyen</th>
+                                    <th>Tür</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pumpHistory">
+                                <!-- JavaScript ile doldurulacak -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Socket.IO bağlantısı
+        const socket = io();
+        
+        // Sensör verilerini güncelle
+        socket.on('sensor_update', function(data) {
+            const payload = JSON.parse(data.payload);
+            
+            // Sensör değerlerini güncelle
+            document.getElementById('temperature').textContent = `${payload.temperature.toFixed(1)}°C`;
+            document.getElementById('humidity').textContent = `${payload.humidity.toFixed(1)}%`;
+            document.getElementById('soil_moisture').textContent = payload.soil_moisture.state;
+            document.getElementById('light').textContent = `${payload.light.percent}%`;
+            
+            // Grafikleri güncelle
+            updateCharts(payload);
+        });
+
+        // Pompa durumunu güncelle
+        socket.on('pump_status', function(data) {
+            const status = data === 'ON';
+            const statusElement = document.getElementById('pump_status');
+            statusElement.innerHTML = `Durum: <span class="badge ${status ? 'bg-success' : 'bg-danger'}">${status ? 'ÇALIŞIYOR' : 'DURDU'}</span>`;
+        });
+
+        // Pompa kontrol butonları
+        document.getElementById('pumpOn').addEventListener('click', function() {
+            fetch('/api/pump/on')
+                .then(response => response.json())
+                .then(data => console.log(data))
+                .catch(error => console.error('Error:', error));
+        });
+
+        document.getElementById('pumpOff').addEventListener('click', function() {
+            fetch('/api/pump/off')
+                .then(response => response.json())
+                .then(data => console.log(data))
+                .catch(error => console.error('Error:', error));
+        });
+
+        // Grafikleri oluştur
+        let tempHumChart, soilLightChart;
+
+        function createCharts() {
+            const tempHumCtx = document.getElementById('tempHumChart').getContext('2d');
+            tempHumChart = new Chart(tempHumCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Sıcaklık (°C)',
+                        borderColor: 'rgb(255, 99, 132)',
+                        data: []
+                    }, {
+                        label: 'Nem (%)',
+                        borderColor: 'rgb(54, 162, 235)',
+                        data: []
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            const soilLightCtx = document.getElementById('soilLightChart').getContext('2d');
+            soilLightChart = new Chart(soilLightCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Toprak Nemi (%)',
+                        borderColor: 'rgb(75, 192, 192)',
+                        data: []
+                    }, {
+                        label: 'Işık (%)',
+                        borderColor: 'rgb(255, 205, 86)',
+                        data: []
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        function updateCharts(data) {
+            const now = new Date().toLocaleTimeString();
+            
+            // Sıcaklık ve nem grafiği
+            tempHumChart.data.labels.push(now);
+            tempHumChart.data.datasets[0].data.push(data.temperature);
+            tempHumChart.data.datasets[1].data.push(data.humidity);
+            
+            // Son 10 veriyi göster
+            if (tempHumChart.data.labels.length > 10) {
+                tempHumChart.data.labels.shift();
+                tempHumChart.data.datasets[0].data.shift();
+                tempHumChart.data.datasets[1].data.shift();
+            }
+            
+            // Toprak nemi ve ışık grafiği
+            soilLightChart.data.labels.push(now);
+            soilLightChart.data.datasets[0].data.push(data.soil_moisture.percent);
+            soilLightChart.data.datasets[1].data.push(data.light.percent);
+            
+            if (soilLightChart.data.labels.length > 10) {
+                soilLightChart.data.labels.shift();
+                soilLightChart.data.datasets[0].data.shift();
+                soilLightChart.data.datasets[1].data.shift();
+            }
+            
+            tempHumChart.update();
+            soilLightChart.update();
+        }
+
+        // Pompa geçmişini güncelle
+        function updatePumpHistory() {
+            fetch('/api/pump/history')
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('pumpHistory');
+                    tbody.innerHTML = '';
+                    
+                    data.forEach(log => {
+                        const row = document.createElement('tr');
+                        const startTime = new Date(log.start_time);
+                        const endTime = log.end_time ? new Date(log.end_time) : null;
+                        
+                        row.innerHTML = `
+                            <td>${startTime.toLocaleDateString()}</td>
+                            <td>${startTime.toLocaleTimeString()}</td>
+                            <td>${endTime ? endTime.toLocaleTimeString() : '-'}</td>
+                            <td>${log.duration ? log.duration + ' sn' : '-'}</td>
+                            <td>${log.triggered_by}</td>
+                            <td><span class="badge ${log.is_manual ? 'bg-primary' : 'bg-info'}">${log.is_manual ? 'Manuel' : 'Otomatik'}</span></td>
+                        `;
+                        
+                        tbody.appendChild(row);
+                    });
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // Sayfa yüklendiğinde
+        document.addEventListener('DOMContentLoaded', function() {
+            createCharts();
+            updatePumpHistory();
+            
+            // Her 5 dakikada bir pompa geçmişini güncelle
+            setInterval(updatePumpHistory, 300000);
+        });
+    </script>
+</body>
+</html>

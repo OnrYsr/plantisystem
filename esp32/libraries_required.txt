@@ -1,0 +1,31 @@
+1. PubSubClient (by Nick O'Leary)
+   - MQTT bağlantısı için
+   - Version: 2.8.0 veya üzeri
+
+2. ArduinoJson (by Benoit Blanchon)
+   - JSON veri işleme için
+   - Version: 6.21.0 veya üzeri
+
+3. ESP32 board package
+   - ESP32 desteği için
+   - Version: 2.0.0 veya üzeri
+
+4. DHT sensor library (by Adafruit)
+   - DHT11 sıcaklık ve nem sensörü için
+   - Version: 1.4.4 veya üzeri
+
+5. Adafruit Unified Sensor
+   - DHT sensör kütüphanesi için gerekli
+   - Version: 1.1.9 veya üzeri
+
+6. Adafruit SSD1306
+   - OLED ekran için
+   - Version: 2.5.7 veya üzeri
+
+7. Adafruit GFX Library
+   - OLED ekran grafikleri için
+   - Version: 1.11.5 veya üzeri
+
+8. Wire
+   - I2C haberleşme için (Arduino IDE ile birlikte gelir)
+   - Version: Sistem varsayılanı
