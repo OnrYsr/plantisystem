@@ -115,3 +115,4 @@ python run.py
    - Flask uygulamasının çalıştığını kontrol edin
    - Port çakışmalarını kontrol edin
    - Log dosyalarını inceleyin
+# Test değişiklik
