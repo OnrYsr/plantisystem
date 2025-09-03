@@ -4,15 +4,20 @@ import paho.mqtt.client as mqtt
 from config import Config
 import json
 
+print("Flask uygulaması başlatılıyor...")
+
 # Flask eklentileri
-socketio = SocketIO(cors_allowed_origins="*")  # CORS sorununu çözmek için
+socketio = SocketIO(cors_allowed_origins="*")
 
 # MQTT client
-mqtt_client = mqtt.Client()
+mqtt_client = mqtt.Client(client_id="flask_client")
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+    print(f"MQTT Broker: {app.config['MQTT_BROKER']}")
+    print(f"MQTT Port: {app.config['MQTT_PORT']}")
+    print(f"MQTT Topics: {app.config['MQTT_TOPICS']}")
 
     # SocketIO başlat
     socketio.init_app(app)
@@ -23,49 +28,54 @@ def create_app(config_class=Config):
 
     # MQTT callbacks
     def on_connect(client, userdata, flags, rc):
-        print(f"MQTT Bağlandı: {rc}")
-        for topic in app.config['MQTT_TOPICS']:
-            client.subscribe(topic)
-            print(f"Topic'e abone olundu: {topic}")
+        if rc == 0:
+            print("✅ MQTT Broker'a başarıyla bağlandı")
+            # Topic'lere abone ol
+            for topic in app.config['MQTT_TOPICS']:
+                client.subscribe(topic)
+                print(f"  📌 Topic'e abone olundu: {topic}")
+        else:
+            print(f"❌ MQTT Bağlantı hatası, rc: {rc}")
+
+    def on_disconnect(client, userdata, rc):
+        print(f"❌ MQTT Bağlantısı kesildi, rc: {rc}")
+        if rc != 0:
+            print("🔄 Yeniden bağlanmaya çalışılacak...")
 
     def on_message(client, userdata, msg):
         try:
-            print(f"MQTT Mesajı alındı - Topic: {msg.topic}")
-            print(f"Payload: {msg.payload.decode()}")
+            print(f"\n📨 MQTT Mesajı alındı:")
+            print(f"  Topic: {msg.topic}")
+            payload_str = msg.payload.decode()
+            print(f"  Raw Payload: {payload_str}")
             
-            # Doğrudan JSON olarak parse et
-            payload = json.loads(msg.payload.decode())
+            # JSON parse et
+            payload = json.loads(payload_str)
+            print(f"  Parsed JSON: {json.dumps(payload, indent=2)}")
             
-            if msg.topic == 'sensors/data':
-                # Sensör verilerini web arayüzüne gönder
-                socketio.emit('sensor_update', {
-                    'topic': msg.topic,
-                    'payload': payload  # JSON olarak gönder
-                })
-                print("Sensör verisi web arayüzüne gönderildi")
+            # Socket.IO ile gönder
+            print("  🔄 Socket.IO ile web arayüzüne gönderiliyor...")
+            socketio.emit('sensor_update', {
+                'topic': msg.topic,
+                'payload': payload
+            })
+            print("  ✅ Veri web arayüzüne gönderildi")
             
-            elif msg.topic == 'pump/status':
-                # Pompa durumunu web arayüzüne gönder
-                socketio.emit('pump_status', payload)
-                print("Pompa durumu web arayüzüne gönderildi")
-            
-            elif msg.topic == 'system/status':
-                # Sistem durumunu web arayüzüne gönder
-                socketio.emit('system_status', payload)
-                print("Sistem durumu web arayüzüne gönderildi")
-                
+        except json.JSONDecodeError as e:
+            print(f"  ❌ JSON parse hatası: {e}")
         except Exception as e:
-            print(f"MQTT mesaj işleme hatası: {e}")
+            print(f"  ❌ Genel hata: {e}")
 
     mqtt_client.on_connect = on_connect
+    mqtt_client.on_disconnect = on_disconnect
     mqtt_client.on_message = on_message
 
     # MQTT bağlantısı
     try:
+        print("\n🔌 MQTT Broker'a bağlanılıyor...")
         mqtt_client.connect(app.config['MQTT_BROKER'], app.config['MQTT_PORT'], 60)
         mqtt_client.loop_start()
-        print("MQTT broker'a bağlandı")
     except Exception as e:
-        print(f"MQTT bağlantı hatası: {e}")
+        print(f"❌ MQTT bağlantı hatası: {e}")
 
     return app
