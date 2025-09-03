@@ -8,39 +8,42 @@
 </head>
 <body>
     <div class="container mt-4">
-        <h1>Sensör Verileri</h1>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Sensör Verileri</h1>
+            <p class="text-muted">Son güncelleme: <span id="lastUpdate">--:--:--</span></p>
+        </div>
         
         <!-- Sensör Değerleri -->
         <div class="row">
             <div class="col-md-3">
                 <div class="card">
-                    <div class="card-body">
+                    <div class="card-body text-center">
                         <h5>Sıcaklık</h5>
-                        <p id="temperature">--°C</p>
+                        <p class="display-6" id="temperature">--°C</p>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="card">
-                    <div class="card-body">
+                    <div class="card-body text-center">
                         <h5>Nem</h5>
-                        <p id="humidity">--%</p>
+                        <p class="display-6" id="humidity">--%</p>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="card">
-                    <div class="card-body">
+                    <div class="card-body text-center">
                         <h5>Toprak Nemi</h5>
-                        <p id="soil_moisture">--</p>
+                        <p class="display-6" id="soil_moisture">--</p>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
                 <div class="card">
-                    <div class="card-body">
+                    <div class="card-body text-center">
                         <h5>Işık</h5>
-                        <p id="light">--%</p>
+                        <p class="display-6" id="light">--%</p>
                     </div>
                 </div>
             </div>
@@ -48,18 +51,70 @@
     </div>
 
     <script>
-        // Her 1 saniyede bir verileri güncelle
-        setInterval(function() {
+        // Son değerleri tut
+        let lastValues = {
+            temperature: 0,
+            humidity: 0,
+            soil_moisture: '',
+            light: 0
+        };
+
+        // Değişim yüzdesi kontrolü
+        function hasSignificantChange(newVal, oldVal, threshold) {
+            if (typeof newVal === 'string' || typeof oldVal === 'string') {
+                return newVal !== oldVal;
+            }
+            return Math.abs(((newVal - oldVal) / oldVal) * 100) > threshold;
+        }
+
+        // Sensör verilerini güncelle
+        function updateSensors() {
             fetch('/api/sensors')
                 .then(response => response.json())
                 .then(data => {
-                    document.getElementById('temperature').textContent = data.temperature.toFixed(1) + '°C';
-                    document.getElementById('humidity').textContent = data.humidity.toFixed(1) + '%';
-                    document.getElementById('soil_moisture').textContent = data.soil_moisture.state;
-                    document.getElementById('light').textContent = data.light.percent + '%';
+                    let shouldUpdate = false;
+                    
+                    // Sıcaklık için %5 değişim kontrolü
+                    if (hasSignificantChange(data.temperature, lastValues.temperature, 5)) {
+                        document.getElementById('temperature').textContent = data.temperature.toFixed(1) + '°C';
+                        lastValues.temperature = data.temperature;
+                        shouldUpdate = true;
+                    }
+                    
+                    // Nem için %10 değişim kontrolü
+                    if (hasSignificantChange(data.humidity, lastValues.humidity, 10)) {
+                        document.getElementById('humidity').textContent = data.humidity.toFixed(1) + '%';
+                        lastValues.humidity = data.humidity;
+                        shouldUpdate = true;
+                    }
+                    
+                    // Toprak nemi durumu değişince güncelle
+                    if (hasSignificantChange(data.soil_moisture.state, lastValues.soil_moisture, 0)) {
+                        document.getElementById('soil_moisture').textContent = data.soil_moisture.state;
+                        lastValues.soil_moisture = data.soil_moisture.state;
+                        shouldUpdate = true;
+                    }
+                    
+                    // Işık için %15 değişim kontrolü
+                    if (hasSignificantChange(data.light.percent, lastValues.light, 15)) {
+                        document.getElementById('light').textContent = data.light.percent + '%';
+                        lastValues.light = data.light.percent;
+                        shouldUpdate = true;
+                    }
+
+                    // Eğer herhangi bir değer güncellendiyse son güncelleme zamanını güncelle
+                    if (shouldUpdate) {
+                        document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+                    }
                 })
                 .catch(error => console.error('Hata:', error));
-        }, 1000);
+        }
+
+        // Sayfa yüklendiğinde ilk veriyi çek
+        updateSensors();
+
+        // Her 20 saniyede bir güncelleme kontrolü yap
+        setInterval(updateSensors, 20000);
     </script>
 </body>
 </html>
