@@ -57,16 +57,25 @@ def create_app(config_class=Config):
             
             # Socket.IO ile gönder
             print("  🔄 Socket.IO ile web arayüzüne gönderiliyor...")
-            socketio.emit('sensor_update', {
-                'topic': msg.topic,
-                'payload': payload
-            })
+            
+            # Doğrudan JSON objesini gönder
+            if msg.topic == 'sensors/data':
+                socketio.emit('sensor_update', {
+                    'topic': msg.topic,
+                    'payload': payload
+                })
+            elif msg.topic == 'pump/status':
+                socketio.emit('pump_status', payload)
+            elif msg.topic == 'system/status':
+                socketio.emit('system_status', payload)
+                
             print("  ✅ Veri web arayüzüne gönderildi")
             
         except json.JSONDecodeError as e:
             print(f"  ❌ JSON parse hatası: {e}")
         except Exception as e:
             print(f"  ❌ Genel hata: {e}")
+            print(f"  Stack trace: {str(e.__traceback__)}")
 
     mqtt_client.on_connect = on_connect
     mqtt_client.on_disconnect = on_disconnect
