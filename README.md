@@ -1,4 +1,4 @@
-# 🌱 PlantiSystem - Akıllı Sulama Sistemi
+# 🌱 PlantıSystem - Akıllı Sulama Sistemi
 
 ## 📝 Proje Hakkında
 PlantıSystem, bitkilerin sulama ihtiyaçlarını otomatik olarak takip eden ve yöneten akıllı bir sulama sistemidir. ESP32 mikrodenetleyici, çeşitli sensörler ve Raspberry Pi tabanlı bir web arayüzü kullanarak bitkilerin sağlığını izler ve optimal sulama koşullarını sağlar.
@@ -76,27 +76,41 @@ python run.py
 - `pump/control`: Pompa kontrolü (ON/OFF)
 - `pump/status`: Pompa durumu
 - `system/status`: Sistem durumu
-- `system/command`: Sistem komutları
 
 ## 📱 Web Arayüzü
 - Adres: `http://<raspberry-pi-ip>:5000`
-- Varsayılan kullanıcı: `admin`
-- Varsayılan şifre: `sifre123`
+- Sensör verilerini gerçek zamanlı görüntüleme
+- Pompa kontrolü (Açma/Kapama)
+- Değişim yüzdelerine göre otomatik güncelleme:
+  - Sıcaklık: %5 değişimde
+  - Nem: %10 değişimde
+  - Işık: %15 değişimde
+  - Toprak Nemi: Durum değiştiğinde
 
 ## 🔄 Veri Akışı
 1. ESP32 sensör verilerini okur
 2. Veriler MQTT üzerinden Raspberry Pi'ye gönderilir
-3. Flask uygulaması verileri alır ve veritabanına kaydeder
-4. Web arayüzü gerçek zamanlı olarak güncellenir
-5. Kullanıcı web arayüzünden pompayı kontrol edebilir
+3. Flask uygulaması verileri alır
+4. Web arayüzü 20 saniyede bir kontrol eder
+5. Anlamlı değişim varsa gösterge güncellenir
 
-## 📊 Veritabanı Şeması
-- Users: Kullanıcı bilgileri
-- SensorData: Sensör verileri geçmişi
-- PumpLog: Pompa çalışma geçmişi
+## 📋 Değişiklik Geçmişi
+
+### 03.09.2023
+- AWS'den Raspberry Pi'ye geçiş yapıldı
+- Yeni sensör yapılandırması:
+  - DHT11 eklendi
+  - İki nem sensöründen biri çıkarıldı
+  - LED'ler kaldırıldı
+  - LDR sensörü eklendi
+  - OLED ekran eklendi
+- Web arayüzü yenilendi:
+  - Socket.IO'dan HTTP API'ye geçildi
+  - Sensör verilerinde değişim yüzdesi kontrolü eklendi
+  - Pompa kontrolü eklendi
+  - Güncelleme sıklığı 20 saniyeye çıkarıldı
 
 ## 🔒 Güvenlik
-- Web arayüzü için kullanıcı kimlik doğrulaması
 - MQTT bağlantısı için güvenli ağ yapılandırması
 - Düzenli yedekleme önerisi
 
@@ -113,6 +127,5 @@ python run.py
 
 3. Web arayüzü sorunları:
    - Flask uygulamasının çalıştığını kontrol edin
-   - Port çakışmalarını kontrol edin
-   - Log dosyalarını inceleyin
-# Test değişiklik
+   - MQTT broker'ın çalıştığını kontrol edin
+   - Tarayıcı konsolunda hataları kontrol edin
