@@ -3,21 +3,23 @@ from flask_socketio import SocketIO
 import paho.mqtt.client as mqtt
 from config import Config
 import json
+import uuid
 
 print("Flask uygulaması başlatılıyor...")
 
 # Flask eklentileri
 socketio = SocketIO(cors_allowed_origins="*")
 
-# MQTT client
-mqtt_client = mqtt.Client(client_id="flask_client")
+# MQTT client - benzersiz ID ile
+client_id = f'flask_client_{str(uuid.uuid4())}'
+mqtt_client = mqtt.Client(client_id=client_id, clean_session=True)
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
     print(f"MQTT Broker: {app.config['MQTT_BROKER']}")
     print(f"MQTT Port: {app.config['MQTT_PORT']}")
-    print(f"MQTT Topics: {app.config['MQTT_TOPICS']}")
+    print(f"MQTT Client ID: {client_id}")
 
     # SocketIO başlat
     socketio.init_app(app)
@@ -38,9 +40,9 @@ def create_app(config_class=Config):
             print(f"❌ MQTT Bağlantı hatası, rc: {rc}")
 
     def on_disconnect(client, userdata, rc):
-        print(f"❌ MQTT Bağlantısı kesildi, rc: {rc}")
         if rc != 0:
-            print("🔄 Yeniden bağlanmaya çalışılacak...")
+            print(f"❌ MQTT Bağlantısı beklenmedik şekilde kesildi, rc: {rc}")
+            print("🔄 5 saniye içinde yeniden bağlanmaya çalışılacak...")
 
     def on_message(client, userdata, msg):
         try:
@@ -70,10 +72,14 @@ def create_app(config_class=Config):
     mqtt_client.on_disconnect = on_disconnect
     mqtt_client.on_message = on_message
 
+    # MQTT bağlantı ayarları
+    mqtt_client.reconnect_delay_set(min_delay=1, max_delay=5)  # Yeniden bağlanma gecikmesi
+    mqtt_client.username_pw_set(username="", password="")  # Anonim bağlantı
+
     # MQTT bağlantısı
     try:
         print("\n🔌 MQTT Broker'a bağlanılıyor...")
-        mqtt_client.connect(app.config['MQTT_BROKER'], app.config['MQTT_PORT'], 60)
+        mqtt_client.connect(app.config['MQTT_BROKER'], app.config['MQTT_PORT'], keepalive=60)
         mqtt_client.loop_start()
     except Exception as e:
         print(f"❌ MQTT bağlantı hatası: {e}")

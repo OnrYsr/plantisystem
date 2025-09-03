@@ -121,12 +121,16 @@
         function debug(message) {
             const debugElement = document.getElementById('debug');
             const timestamp = new Date().toLocaleTimeString();
-            debugElement.innerHTML += `[${timestamp}] ${message}\n`;
-            debugElement.scrollTop = debugElement.scrollHeight;
+            debugElement.innerHTML = `[${timestamp}] ${message}\n` + debugElement.innerHTML;
+            debugElement.scrollTop = 0;
         }
 
         // Socket.IO bağlantısı
-        const socket = io();
+        const socket = io({
+            transports: ['websocket'],
+            upgrade: false
+        });
+        
         debug('Socket.IO bağlantısı başlatıldı');
         
         // Bağlantı durumu
@@ -137,14 +141,17 @@
         socket.on('disconnect', () => {
             debug('Socket.IO bağlantısı kesildi');
         });
+
+        socket.on('error', (error) => {
+            debug(`Socket.IO hatası: ${error}`);
+        });
         
         // Sensör verilerini güncelle
         socket.on('sensor_update', function(data) {
             debug(`Yeni veri alındı - Topic: ${data.topic}`);
             debug(`Payload: ${JSON.stringify(data.payload)}`);
             
-            try {
-                // data.payload zaten JSON objesi
+            if (data.topic === 'sensors/data') {
                 const payload = data.payload;
                 
                 // Sensör değerlerini güncelle
@@ -152,9 +159,8 @@
                 document.getElementById('humidity').textContent = `${payload.humidity.toFixed(1)}%`;
                 document.getElementById('soil_moisture').textContent = payload.soil_moisture.state;
                 document.getElementById('light').textContent = `${payload.light.percent}%`;
+                
                 debug('Sensör değerleri güncellendi');
-            } catch (error) {
-                debug(`HATA: ${error.message}`);
             }
         });
 
