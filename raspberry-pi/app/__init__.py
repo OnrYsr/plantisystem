@@ -8,7 +8,7 @@ import uuid
 print("Flask uygulaması başlatılıyor...")
 
 # Flask eklentileri
-socketio = SocketIO(cors_allowed_origins="*")
+socketio = SocketIO(cors_allowed_origins="*", async_mode='eventlet')
 
 # MQTT client - benzersiz ID ile
 client_id = f'flask_client_{str(uuid.uuid4())}'
@@ -45,45 +45,48 @@ def create_app(config_class=Config):
             print("🔄 5 saniye içinde yeniden bağlanmaya çalışılacak...")
 
     def on_message(client, userdata, msg):
-        try:
-            print(f"\n📨 MQTT Mesajı alındı:")
-            print(f"  Topic: {msg.topic}")
-            payload_str = msg.payload.decode()
-            print(f"  Raw Payload: {payload_str}")
-            
-            # JSON parse et
-            payload = json.loads(payload_str)
-            print(f"  Parsed JSON: {json.dumps(payload, indent=2)}")
-            
-            # Socket.IO ile gönder
-            print("  🔄 Socket.IO ile web arayüzüne gönderiliyor...")
-            
-            # Doğrudan JSON objesini gönder
-            if msg.topic == 'sensors/data':
-                socketio.emit('sensor_update', {
-                    'topic': msg.topic,
-                    'payload': payload
-                })
-            elif msg.topic == 'pump/status':
-                socketio.emit('pump_status', payload)
-            elif msg.topic == 'system/status':
-                socketio.emit('system_status', payload)
+        with app.app_context():
+            try:
+                print(f"\n📨 MQTT Mesajı alındı:")
+                print(f"  Topic: {msg.topic}")
+                payload_str = msg.payload.decode()
+                print(f"  Raw Payload: {payload_str}")
                 
-            print("  ✅ Veri web arayüzüne gönderildi")
-            
-        except json.JSONDecodeError as e:
-            print(f"  ❌ JSON parse hatası: {e}")
-        except Exception as e:
-            print(f"  ❌ Genel hata: {e}")
-            print(f"  Stack trace: {str(e.__traceback__)}")
+                # JSON parse et
+                payload = json.loads(payload_str)
+                print(f"  Parsed JSON: {json.dumps(payload, indent=2)}")
+                
+                # Socket.IO ile gönder
+                print("  🔄 Socket.IO ile web arayüzüne gönderiliyor...")
+                
+                if msg.topic == 'sensors/data':
+                    socketio.emit('sensor_update', {
+                        'topic': msg.topic,
+                        'payload': payload
+                    }, namespace='/')
+                    print("  ✅ Sensör verisi gönderildi")
+                
+                elif msg.topic == 'pump/status':
+                    socketio.emit('pump_status', payload, namespace='/')
+                    print("  ✅ Pompa durumu gönderildi")
+                
+                elif msg.topic == 'system/status':
+                    socketio.emit('system_status', payload, namespace='/')
+                    print("  ✅ Sistem durumu gönderildi")
+                
+            except json.JSONDecodeError as e:
+                print(f"  ❌ JSON parse hatası: {e}")
+            except Exception as e:
+                print(f"  ❌ Genel hata: {e}")
+                print(f"  Stack trace: {str(e.__traceback__)}")
 
     mqtt_client.on_connect = on_connect
     mqtt_client.on_disconnect = on_disconnect
     mqtt_client.on_message = on_message
 
     # MQTT bağlantı ayarları
-    mqtt_client.reconnect_delay_set(min_delay=1, max_delay=5)  # Yeniden bağlanma gecikmesi
-    mqtt_client.username_pw_set(username="", password="")  # Anonim bağlantı
+    mqtt_client.reconnect_delay_set(min_delay=1, max_delay=5)
+    mqtt_client.username_pw_set(username="", password="")
 
     # MQTT bağlantısı
     try:

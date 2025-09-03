@@ -16,6 +16,12 @@
             transform: translateY(-5px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
+        #debug {
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
     </style>
 </head>
 <body>
@@ -33,6 +39,9 @@
         <div class="card mb-3">
             <div class="card-body">
                 <h5 class="card-title">Debug Bilgileri</h5>
+                <div class="d-flex justify-content-end mb-2">
+                    <button class="btn btn-sm btn-secondary" onclick="clearDebug()">Temizle</button>
+                </div>
                 <pre id="debug" class="bg-light p-2" style="max-height: 200px; overflow-y: auto;"></pre>
             </div>
         </div>
@@ -116,83 +125,98 @@
     </div>
 
     <script>
-        // Debug fonksiyonu
-        function debug(message) {
+        // Debug fonksiyonları
+        function addDebugMessage(message) {
             const debugElement = document.getElementById('debug');
             const timestamp = new Date().toLocaleTimeString();
             debugElement.innerHTML = `[${timestamp}] ${message}\n` + debugElement.innerHTML;
-            debugElement.scrollTop = 0;
-            console.log(`[${timestamp}] ${message}`); // Tarayıcı konsoluna da yaz
+        }
+
+        function clearDebug() {
+            document.getElementById('debug').innerHTML = '';
         }
 
         // Socket.IO bağlantısı
         const socket = io({
-            transports: ['websocket'],
-            upgrade: false,
+            transports: ['websocket', 'polling'],
             reconnection: true,
-            reconnectionDelay: 1000,
-            reconnectionDelayMax: 5000,
-            reconnectionAttempts: Infinity
+            reconnectionAttempts: Infinity,
+            reconnectionDelay: 1000
         });
-        
-        debug('Socket.IO bağlantısı başlatıldı');
-        
-        // Bağlantı durumu
+
+        // Bağlantı olayları
         socket.on('connect', () => {
-            debug('Socket.IO bağlandı');
+            addDebugMessage('✅ Socket.IO bağlandı');
+            document.title = 'Akıllı Sulama Sistemi - Bağlı';
         });
 
         socket.on('disconnect', () => {
-            debug('Socket.IO bağlantısı kesildi');
+            addDebugMessage('❌ Socket.IO bağlantısı kesildi');
+            document.title = 'Akıllı Sulama Sistemi - Bağlantı Kesildi';
         });
 
-        socket.on('error', (error) => {
-            debug(`Socket.IO hatası: ${error}`);
+        socket.on('connect_error', (error) => {
+            addDebugMessage(`❌ Socket.IO bağlantı hatası: ${error.message}`);
         });
-        
+
         // Sensör verilerini güncelle
         socket.on('sensor_update', function(data) {
+            console.log('Sensor update received:', data); // Browser konsoluna yaz
+            addDebugMessage(`📊 Sensör verisi alındı: ${JSON.stringify(data)}`);
+
             try {
-                debug(`Yeni veri alındı - Topic: ${data.topic}`);
+                const payload = data.payload;
                 
-                if (data.topic === 'sensors/data') {
-                    const payload = data.payload;
-                    debug(`Sensör verileri: Sıcaklık=${payload.temperature}°C, Nem=${payload.humidity}%, Toprak=${payload.soil_moisture.state}, Işık=${payload.light.percent}%`);
-                    
-                    // Sensör değerlerini güncelle
-                    document.getElementById('temperature').textContent = `${payload.temperature.toFixed(1)}°C`;
-                    document.getElementById('humidity').textContent = `${payload.humidity.toFixed(1)}%`;
-                    document.getElementById('soil_moisture').textContent = payload.soil_moisture.state;
-                    document.getElementById('light').textContent = `${payload.light.percent}%`;
-                }
+                // Sıcaklık
+                const tempElement = document.getElementById('temperature');
+                tempElement.textContent = `${payload.temperature.toFixed(1)}°C`;
+                
+                // Nem
+                const humElement = document.getElementById('humidity');
+                humElement.textContent = `${payload.humidity.toFixed(1)}%`;
+                
+                // Toprak Nemi
+                const soilElement = document.getElementById('soil_moisture');
+                soilElement.textContent = payload.soil_moisture.state;
+                
+                // Işık
+                const lightElement = document.getElementById('light');
+                lightElement.textContent = `${payload.light.percent}%`;
+                
+                addDebugMessage('✅ Sensör değerleri güncellendi');
             } catch (error) {
-                debug(`HATA: ${error.message}`);
-                console.error(error); // Tarayıcı konsoluna detaylı hata
+                addDebugMessage(`❌ Veri işleme hatası: ${error.message}`);
+                console.error('Veri işleme hatası:', error);
             }
         });
 
         // Pompa durumunu güncelle
         socket.on('pump_status', function(status) {
-            debug(`Pompa durumu alındı: ${status}`);
+            addDebugMessage(`🚰 Pompa durumu: ${status}`);
             const statusElement = document.getElementById('pump_status');
             statusElement.innerHTML = `Durum: <span class="badge ${status === 'ON' ? 'bg-success' : 'bg-danger'}">${status === 'ON' ? 'ÇALIŞIYOR' : 'DURDU'}</span>`;
         });
 
         // Pompa kontrol butonları
         document.getElementById('pumpOn').addEventListener('click', function() {
-            debug('Pompa AÇIK butonu tıklandı');
+            addDebugMessage('🚰 Pompa AÇIK komutu gönderiliyor...');
             fetch('/api/pump/on')
                 .then(response => response.json())
-                .then(data => debug(`Pompa AÇIK yanıt: ${JSON.stringify(data)}`))
-                .catch(error => debug(`Pompa AÇIK hata: ${error}`));
+                .then(data => addDebugMessage(`✅ Pompa AÇIK yanıt: ${JSON.stringify(data)}`))
+                .catch(error => addDebugMessage(`❌ Pompa AÇIK hata: ${error.message}`));
         });
 
         document.getElementById('pumpOff').addEventListener('click', function() {
-            debug('Pompa KAPALI butonu tıklandı');
+            addDebugMessage('🚰 Pompa KAPALI komutu gönderiliyor...');
             fetch('/api/pump/off')
                 .then(response => response.json())
-                .then(data => debug(`Pompa KAPALI yanıt: ${JSON.stringify(data)}`))
-                .catch(error => debug(`Pompa KAPALI hata: ${error}`));
+                .then(data => addDebugMessage(`✅ Pompa KAPALI yanıt: ${JSON.stringify(data)}`))
+                .catch(error => addDebugMessage(`❌ Pompa KAPALI hata: ${error.message}`));
+        });
+
+        // Sayfa yüklendiğinde
+        window.addEventListener('load', function() {
+            addDebugMessage('🔄 Sayfa yüklendi, Socket.IO bağlantısı başlatılıyor...');
         });
     </script>
 </body>
