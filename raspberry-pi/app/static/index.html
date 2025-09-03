@@ -14,7 +14,7 @@
         </div>
         
         <!-- Sensör Değerleri -->
-        <div class="row">
+        <div class="row mb-4">
             <div class="col-md-3">
                 <div class="card">
                     <div class="card-body text-center">
@@ -44,6 +44,28 @@
                     <div class="card-body text-center">
                         <h5>Işık</h5>
                         <p class="display-6" id="light">--%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pompa Kontrolü -->
+        <div class="card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h4>Su Pompası Kontrolü</h4>
+                        <p id="pump_status" class="mb-0">
+                            Durum: <span class="badge bg-secondary">Bilinmiyor</span>
+                        </p>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <button id="pumpOn" class="btn btn-success me-2">
+                            Pompayı Çalıştır
+                        </button>
+                        <button id="pumpOff" class="btn btn-danger">
+                            Pompayı Durdur
+                        </button>
                     </div>
                 </div>
             </div>
@@ -109,6 +131,31 @@
                 })
                 .catch(error => console.error('Hata:', error));
         }
+
+        // Pompa durumunu güncelle
+        function updatePumpStatus(status) {
+            const statusElement = document.getElementById('pump_status');
+            statusElement.innerHTML = `Durum: <span class="badge ${status ? 'bg-success' : 'bg-danger'}">${status ? 'ÇALIŞIYOR' : 'DURDU'}</span>`;
+        }
+
+        // Pompa kontrol butonları
+        document.getElementById('pumpOn').addEventListener('click', function() {
+            fetch('/api/pump/on')
+                .then(response => response.json())
+                .then(data => {
+                    updatePumpStatus(true);
+                })
+                .catch(error => console.error('Hata:', error));
+        });
+
+        document.getElementById('pumpOff').addEventListener('click', function() {
+            fetch('/api/pump/off')
+                .then(response => response.json())
+                .then(data => {
+                    updatePumpStatus(false);
+                })
+                .catch(error => console.error('Hata:', error));
+        });
 
         // Sayfa yüklendiğinde ilk veriyi çek
         updateSensors();

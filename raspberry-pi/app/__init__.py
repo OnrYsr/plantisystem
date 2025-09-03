@@ -17,12 +17,15 @@ def create_app():
     def on_connect(client, userdata, flags, rc):
         print(f"MQTT Bağlandı: {rc}")
         client.subscribe("sensors/data")
-        print("MQTT topic'e abone olundu")
+        client.subscribe("pump/status")
+        print("MQTT topic'lere abone olundu")
 
     def on_message(client, userdata, msg):
         global latest_sensor_data
         print(f"MQTT Mesajı alındı: {msg.payload.decode()}")
-        latest_sensor_data = json.loads(msg.payload.decode())
+        
+        if msg.topic == "sensors/data":
+            latest_sensor_data = json.loads(msg.payload.decode())
 
     # MQTT client
     mqtt_client = mqtt.Client()
@@ -37,6 +40,16 @@ def create_app():
     @app.route('/api/sensors')
     def get_sensors():
         return jsonify(latest_sensor_data)
+
+    @app.route('/api/pump/on')
+    def pump_on():
+        mqtt_client.publish('pump/control', 'ON')
+        return jsonify({'status': 'success', 'message': 'Pump turned ON'})
+
+    @app.route('/api/pump/off')
+    def pump_off():
+        mqtt_client.publish('pump/control', 'OFF')
+        return jsonify({'status': 'success', 'message': 'Pump turned OFF'})
 
     @app.route('/')
     def index():
