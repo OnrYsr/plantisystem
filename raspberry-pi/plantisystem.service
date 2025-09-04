@@ -1,0 +1,16 @@
+[Unit]
+Description=PlantiSystem Web Server
+After=network.target mosquitto.service
+Wants=mosquitto.service
+
+[Service]
+Type=simple
+User=muse3dstudio
+WorkingDirectory=/home/muse3dstudio/plantisystem/raspberry-pi
+Environment="PATH=/home/muse3dstudio/plantisystem/raspberry-pi/venv/bin"
+ExecStart=/home/muse3dstudio/plantisystem/raspberry-pi/venv/bin/python run.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
