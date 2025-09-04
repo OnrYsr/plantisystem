@@ -11,17 +11,20 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe([
         ("sensors/data", 0),
         ("pump/status", 0),
-        ("system/metrics", 0)
+        ("system/metrics", 0)  # ESP32 sistem metriklerini dinle
     ])
     print("MQTT topic'lere abone olundu")
 
 def on_message(client, userdata, msg):
     try:
+        payload = json.loads(msg.payload.decode())
+        print(f"MQTT Mesajı alındı [{msg.topic}]: {msg.payload.decode()}")
+        
         if msg.topic == "sensors/data":
-            app.latest_sensor_data = json.loads(msg.payload.decode())
+            app.latest_sensor_data = payload
         elif msg.topic == "system/metrics":
-            app.latest_esp_metrics = json.loads(msg.payload.decode())
-        print(f"MQTT Mesajı alındı: {msg.payload.decode()}")
+            app.latest_esp_metrics = payload
+            print("ESP32 metrikleri güncellendi:", payload)
     except Exception as e:
         print(f"MQTT mesaj işleme hatası: {e}")
 
