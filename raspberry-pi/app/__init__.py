@@ -2,7 +2,7 @@ from flask import Flask
 import paho.mqtt.client as mqtt
 import json
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='', static_folder='static')
 app.latest_sensor_data = {}
 
 def on_connect(client, userdata, flags, rc):
