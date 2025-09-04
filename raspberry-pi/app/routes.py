@@ -1,4 +1,4 @@
-from flask import jsonify, request
+from flask import jsonify
 from app import app
 from app.system_metrics import get_system_metrics
 
@@ -24,6 +24,10 @@ def get_sensors():
 @app.route('/api/system/metrics')
 def system_metrics():
     return jsonify(get_system_metrics())
+
+@app.route('/api/system/esp_metrics')
+def esp_metrics():
+    return jsonify(app.latest_esp_metrics if hasattr(app, 'latest_esp_metrics') else {})
 
 @app.route('/api/pump/on', methods=['POST'])
 def pump_on():

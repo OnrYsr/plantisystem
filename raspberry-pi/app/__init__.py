@@ -4,6 +4,7 @@ import json
 
 app = Flask(__name__, static_url_path='', static_folder='static')
 app.latest_sensor_data = {}
+app.latest_esp_metrics = {}
 
 def on_connect(client, userdata, flags, rc):
     print(f"MQTT Bağlandı: {rc}")
@@ -18,6 +19,8 @@ def on_message(client, userdata, msg):
     try:
         if msg.topic == "sensors/data":
             app.latest_sensor_data = json.loads(msg.payload.decode())
+        elif msg.topic == "system/metrics":
+            app.latest_esp_metrics = json.loads(msg.payload.decode())
         print(f"MQTT Mesajı alındı: {msg.payload.decode()}")
     except Exception as e:
         print(f"MQTT mesaj işleme hatası: {e}")
