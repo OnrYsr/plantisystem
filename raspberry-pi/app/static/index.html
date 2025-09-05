@@ -67,15 +67,13 @@
             </div>
         </div>
 
-        <!-- Kamera Görüntüsü -->
+        <!-- Kamera Görüntüsü - Geçici olarak devre dışı -->
         <div class="card mt-4">
             <div class="card-header">
                 <h5 class="mb-0">Kamera</h5>
             </div>
             <div class="card-body text-center">
-                <img id="cameraImage" src="" class="mb-3" alt="Kamera görüntüsü">
-                <br>
-                <button id="takeSnapshot" class="btn btn-primary">Fotoğraf Çek</button>
+                <p class="text-muted">Kamera özelliği geçici olarak devre dışı bırakıldı.</p>
             </div>
         </div>
 
@@ -214,29 +212,23 @@
                 });
         });
 
-        // Kamera kontrolü
-        function updateCamera() {
-            fetch('/api/camera/snapshot')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.image) {
-                        document.getElementById('cameraImage').src = data.image;
-                    } else {
-                        console.error('Kamera hatası:', data.error);
-                        document.getElementById('cameraImage').alt = 'Kamera hatası: ' + data.error;
-                    }
-                })
-                .catch(error => {
-                    console.error('Kamera hatası:', error);
-                    document.getElementById('cameraImage').alt = 'Kamera bağlantı hatası';
-                });
-        }
-
-        // Kamera butonunu ayarla
-        document.getElementById('takeSnapshot').addEventListener('click', updateCamera);
-
-        // Kamerayı otomatik güncelle
-        setInterval(updateCamera, 5000);  // Her 5 saniyede bir güncelle
+        // Kamera kontrolü - Geçici olarak devre dışı
+        // function updateCamera() {
+        //     fetch('/api/camera/snapshot')
+        //         .then(response => response.json())
+        //         .then(data => {
+        //             if (data.image) {
+        //                 document.getElementById('cameraImage').src = data.image;
+        //             } else {
+        //                 console.error('Kamera hatası:', data.error);
+        //                 document.getElementById('cameraImage').alt = 'Kamera hatası: ' + data.error;
+        //             }
+        //         })
+        //         .catch(error => {
+        //             console.error('Kamera hatası:', error);
+        //             document.getElementById('cameraImage').alt = 'Kamera bağlantı hatası';
+        //         });
+        // }
 
         // Periyodik güncelleme
         setInterval(updateSensors, 20000);  // Her 20 saniyede bir
@@ -247,7 +239,6 @@
         updateSensors();
         updateSystemMetrics();
         updateESPMetrics();
-        updateCamera();  // Kamera görüntüsünü hemen yükle
     </script>
 </body>
 </html>
