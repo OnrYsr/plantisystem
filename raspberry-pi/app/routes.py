@@ -5,8 +5,24 @@ import cv2
 import base64
 import io
 
-# Global kamera nesnesi
-camera = cv2.VideoCapture(0)
+# Global kamera nesnesi ve durumu
+camera = None
+camera_error = None
+
+def init_camera():
+    global camera, camera_error
+    try:
+        if camera is None:
+            camera = cv2.VideoCapture(0)
+            if not camera.isOpened():
+                camera_error = "Kamera başlatılamadı"
+                return False
+            camera_error = None
+            return True
+        return camera.isOpened()
+    except Exception as e:
+        camera_error = str(e)
+        return False
 
 @app.route('/')
 def index():
@@ -30,14 +46,27 @@ def get_sensors():
 
 @app.route('/api/camera/snapshot')
 def get_snapshot():
-    ret, frame = camera.read()
-    if ret:
-        # Görüntüyü JPEG formatına çevir
-        _, buffer = cv2.imencode('.jpg', frame)
-        # Base64'e çevir
-        image_base64 = base64.b64encode(buffer).decode('utf-8')
-        return jsonify({'image': f'data:image/jpeg;base64,{image_base64}'})
-    return jsonify({'error': 'Kamera görüntüsü alınamadı'}), 400
+    global camera, camera_error
+    
+    if not init_camera():
+        return jsonify({'error': camera_error or 'Kamera başlatılamadı'}), 400
+        
+    try:
+        ret, frame = camera.read()
+        if ret:
+            # Görüntüyü JPEG formatına çevir
+            _, buffer = cv2.imencode('.jpg', frame)
+            # Base64'e çevir
+            image_base64 = base64.b64encode(buffer).decode('utf-8')
+            return jsonify({'image': f'data:image/jpeg;base64,{image_base64}'})
+        else:
+            camera.release()
+            camera = None
+            return jsonify({'error': 'Kamera görüntüsü alınamadı'}), 400
+    except Exception as e:
+        camera.release()
+        camera = None
+        return jsonify({'error': str(e)}), 400
 
 @app.route('/api/system/metrics')
 def system_metrics():
