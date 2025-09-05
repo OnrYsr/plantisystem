@@ -8,6 +8,7 @@
     <style>
         .card { margin-bottom: 1rem; }
         .system-metrics { font-size: 0.9rem; }
+        #cameraImage { max-width: 100%; height: auto; }
     </style>
 </head>
 <body>
@@ -63,6 +64,18 @@
                 <p>Durum: <span id="pumpStatus" class="badge bg-secondary">--</span></p>
                 <button id="pumpOn" class="btn btn-success">Pompayı Çalıştır</button>
                 <button id="pumpOff" class="btn btn-danger">Pompayı Durdur</button>
+            </div>
+        </div>
+
+        <!-- Kamera Görüntüsü -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Kamera</h5>
+            </div>
+            <div class="card-body text-center">
+                <img id="cameraImage" src="" class="mb-3" alt="Kamera görüntüsü">
+                <br>
+                <button id="takeSnapshot" class="btn btn-primary">Fotoğraf Çek</button>
             </div>
         </div>
 
@@ -198,6 +211,23 @@
                 .then(() => {
                     document.getElementById('pumpStatus').textContent = 'KAPALI';
                     document.getElementById('pumpStatus').className = 'badge bg-danger';
+                });
+        });
+
+        // Kamera kontrolü
+        document.getElementById('takeSnapshot').addEventListener('click', () => {
+            fetch('/api/camera/snapshot')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.image) {
+                        document.getElementById('cameraImage').src = data.image;
+                    } else {
+                        alert('Fotoğraf çekilemedi!');
+                    }
+                })
+                .catch(error => {
+                    console.error('Hata:', error);
+                    alert('Bir hata oluştu!');
                 });
         });
 

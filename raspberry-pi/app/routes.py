@@ -1,6 +1,12 @@
-from flask import jsonify
+from flask import jsonify, send_file
 from app import app
 from app.system_metrics import get_system_metrics
+import cv2
+import base64
+import io
+
+# Global kamera nesnesi
+camera = cv2.VideoCapture(0)
 
 @app.route('/')
 def index():
@@ -8,12 +14,11 @@ def index():
 
 @app.route('/api/sensors')
 def get_sensors():
-    print("Debug - latest_sensor_data:", app.latest_sensor_data)
     return jsonify({
         "temperature": float(app.latest_sensor_data.get("temperature", 0)),
         "humidity": float(app.latest_sensor_data.get("humidity", 0)),
         "soil_moisture": {
-            "state": app.latest_sensor_data.get("soil_moisture", {}).get("digital"),
+            "state": app.latest_sensor_data.get("soil_moisture", {}).get("digital", "--"),
             "analog": int(app.latest_sensor_data.get("soil_moisture", {}).get("analog", 0)),
             "percent": int(app.latest_sensor_data.get("soil_moisture", {}).get("percent", 0))
         },
@@ -22,6 +27,17 @@ def get_sensors():
             "percent": int(app.latest_sensor_data.get("light", {}).get("percent", 0))
         }
     })
+
+@app.route('/api/camera/snapshot')
+def get_snapshot():
+    ret, frame = camera.read()
+    if ret:
+        # Görüntüyü JPEG formatına çevir
+        _, buffer = cv2.imencode('.jpg', frame)
+        # Base64'e çevir
+        image_base64 = base64.b64encode(buffer).decode('utf-8')
+        return jsonify({'image': f'data:image/jpeg;base64,{image_base64}'})
+    return jsonify({'error': 'Kamera görüntüsü alınamadı'}), 400
 
 @app.route('/api/system/metrics')
 def system_metrics():
