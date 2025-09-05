@@ -38,7 +38,8 @@
                     <div class="card-body">
                         <h5 class="card-title">Toprak Nemi</h5>
                         <h2 id="soilMoisture">--</h2>
-                        <p class="mb-0">Analog: <span id="soilMoisturePercent">--%</span></p>
+                        <p class="mb-0">Yüzde: <span id="soilMoisturePercent">--%</span></p>
+                        <p class="mb-0">Ham Değer: <span id="soilMoistureRaw">--</span></p>
                     </div>
                 </div>
             </div>
@@ -47,6 +48,7 @@
                     <div class="card-body">
                         <h5 class="card-title">Işık</h5>
                         <h2 id="light">--%</h2>
+                        <p class="mb-0">Ham Değer: <span id="lightRaw">--</span></p>
                     </div>
                 </div>
             </div>
@@ -138,7 +140,9 @@
                     document.getElementById('humidity').textContent = data.humidity + '%';
                     document.getElementById('soilMoisture').textContent = data.soil_moisture.state || '--';
                     document.getElementById('soilMoisturePercent').textContent = data.soil_moisture.percent + '%';
+                    document.getElementById('soilMoistureRaw').textContent = data.soil_moisture.analog;
                     document.getElementById('light').textContent = data.light.percent + '%';
+                    document.getElementById('lightRaw').textContent = data.light.raw;
                     document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
                 });
         }
