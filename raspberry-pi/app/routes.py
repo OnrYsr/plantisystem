@@ -8,11 +8,13 @@ def index():
 
 @app.route('/api/sensors')
 def get_sensors():
+    print("Debug - latest_sensor_data:", app.latest_sensor_data)
     return jsonify({
         "temperature": float(app.latest_sensor_data.get("temperature", 0)),
         "humidity": float(app.latest_sensor_data.get("humidity", 0)),
         "soil_moisture": {
-            "state": app.latest_sensor_data.get("soil_moisture", {}).get("state", "--"),
+            "state": app.latest_sensor_data.get("soil_moisture", {}).get("digital"),
+            "analog": int(app.latest_sensor_data.get("soil_moisture", {}).get("analog", 0)),
             "percent": int(app.latest_sensor_data.get("soil_moisture", {}).get("percent", 0))
         },
         "light": {

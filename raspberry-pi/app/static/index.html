@@ -38,6 +38,7 @@
                     <div class="card-body">
                         <h5 class="card-title">Toprak Nemi</h5>
                         <h2 id="soilMoisture">--</h2>
+                        <p class="mb-0">Analog: <span id="soilMoisturePercent">--%</span></p>
                     </div>
                 </div>
             </div>
@@ -135,7 +136,8 @@
                 .then(data => {
                     document.getElementById('temperature').textContent = data.temperature + '°C';
                     document.getElementById('humidity').textContent = data.humidity + '%';
-                    document.getElementById('soilMoisture').textContent = data.soil_moisture.state;
+                    document.getElementById('soilMoisture').textContent = data.soil_moisture.state || '--';
+                    document.getElementById('soilMoisturePercent').textContent = data.soil_moisture.percent + '%';
                     document.getElementById('light').textContent = data.light.percent + '%';
                     document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
                 });
